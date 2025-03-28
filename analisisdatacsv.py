@@ -1,68 +1,11 @@
 import streamlit as st
-
-st.markdown("""
-# Data Analysis App
-
-This is a Streamlit application for data analysis, which includes features for gathering data, assessing data, cleaning data, exploratory data analysis (EDA), and visualization & explanatory analysis.
-
-## Features
-
-- **Gathering Data**: View dataset.
-- **Assessing Data**: Summary statistics and missing values.
-- **Cleaning Data**: Handle missing values.
-- **Exploratory Data Analysis (EDA)**: Visualize and explore relationships.
-- **Visualization & Explanatory Analysis**: Interactive charts.
-
-## Installation
-
-1. Clone the repository:
-    ```sh
-    git clone https://github.com/yourusername/data-analysis-app.git
-    cd data-analysis-app
-    # ```
-
-2. Install the required libraries:
-    ```sh
-    pip install -r requirements.txt
-    ```
-
-## Usage
-
-1. Run the Streamlit app:
-    ```sh
-    streamlit run analisisdatacsv.py
-    ```
-
-2. Open your web browser and go to `http://localhost:8503`.
-
-## File Structure
-
-- `app.py`: The main Python script for the Streamlit app.
-- `requirements.txt`: The list of required libraries.
-- `README.md`: This markdown file.
-
-## Code Overview
-# Data Analysis App
-
-Aplikasi ini memungkinkan pengguna untuk melakukan analisis data secara interaktif menggunakan Streamlit. Berikut adalah tahapan-tahapan dalam proses analisis data hingga menjalankan aplikasi di localhost:
-
-## 1. Import Library
-Pertama, kita perlu mengimpor library yang diperlukan untuk analisis data dan visualisasi.
-
-```python
-import streamlit as st
 from streamlit_option_menu import option_menu
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
-```
 
-## 2. Load Dataset
-Menggunakan fungsi `load_data` untuk memuat dataset yang akan dianalisis.
-
-```python
 # Load dataset
 @st.cache_data
 def load_data():
@@ -74,12 +17,7 @@ def load_data():
 
 # Call the function to load the data
 data = load_data()
-```
 
-## 3. Konversi Kolom Datetime
-Memastikan kolom tanggal dikonversi ke format datetime.
-
-```python
 # Tambahkan kolom Date jika tidak ada
 if 'Date' not in data.columns:
     data['Date'] = pd.date_range(start='2013-03-01', periods=len(data), freq='h')
@@ -88,12 +26,7 @@ if 'Date' not in data.columns:
 date_columns = ['Date']  
 for col in date_columns:
     data[col] = pd.to_datetime(data[col], format='%Y-%m-%d %H:%M:%S')
-```
 
-## 4. Sidebar Navigation
-Menambahkan navigasi sidebar untuk memilih fitur analisis yang diinginkan.
-
-```python
 # Sidebar Navigation
 with st.sidebar:
     selected = option_menu(
@@ -102,12 +35,8 @@ with st.sidebar:
          'Exploratory Data Analysis (EDA)', 'Visualization & Explanatory Analysis'],
         default_index=0
     )
-```
 
-## 5. Title and Description
-Menambahkan judul dan deskripsi aplikasi.
-
-```python
+# Title and Description
 st.title("Data Analysis App")
 st.markdown("""
     ### Features:
@@ -117,15 +46,7 @@ st.markdown("""
     - **Exploratory Data Analysis (EDA)**: Visualize and explore relationships.
     - **Visualization & Explanatory Analysis**: Interactive charts.
 """)
-```
 
-## 6. Main Application Logic
-Menjalankan logika utama aplikasi berdasarkan fitur yang dipilih.
-
-### 6.1 Gathering Data
-Menampilkan sampel data dari dataset.
-
-```python
 # Main application logic
 if data is not None:
     # Gathering Data
@@ -133,58 +54,41 @@ if data is not None:
         st.subheader("1. Gathering Data")
         st.write("Sample Data:")
         st.dataframe(data.head())
-```
 
-### 6.2 Assessing Data
-Menampilkan statistik deskriptif dan nilai yang hilang dalam dataset.
+    # Assessing Data
+    elif selected == 'Assessing Data':
+        st.subheader("2. Assessing Data")
+        st.write("Summary Statistics:")
+        st.write(data.describe())
+        st.write("Missing Values:")
+        st.write(data.isnull().sum())
 
-```python
-elif selected == 'Assessing Data':
-    st.subheader("2. Assessing Data")
-    st.write("Summary Statistics:")
-    st.write(data.describe())
-    st.write("Missing Values:")
-    st.write(data.isnull().sum())
-```
+    # Cleaning Data
+    elif selected == 'Cleaning Data':
+        st.subheader("3. Cleaning Data")
+        missing_values_handling = st.radio(
+            "Choose how to handle missing values:",
+            ("Drop rows with missing values", "Fill missing values with mean")
+        )
+        if missing_values_handling == "Drop rows with missing values":
+            data_cleaned = data.dropna()
+        else:
+            data_cleaned = data.fillna(data.mean(numeric_only=True))
+        st.write("Cleaned Data Sample:")
+        st.dataframe(data_cleaned.head())
 
-### 6.3 Cleaning Data
-Membersihkan data dengan menghapus atau mengisi nilai yang hilang.
+    # Exploratory Data Analysis (EDA)
+    elif selected == 'Exploratory Data Analysis (EDA)':
+        st.subheader("4. Exploratory Data Analysis (EDA)")
+        numerical_columns = data.select_dtypes(include=np.number).columns.tolist()
+        selected_column = st.selectbox("Select a numerical column:", numerical_columns)
+        if selected_column:
+            st.write(f"Distribution of {selected_column}:")
+            fig, ax = plt.subplots()
+            sns.histplot(data[selected_column], kde=True, ax=ax)
+            st.pyplot(fig)
 
-```python
-elif selected == 'Cleaning Data':
-    st.subheader("3. Cleaning Data")
-    missing_values_handling = st.radio(
-        "Choose how to handle missing values:",
-        ("Drop rows with missing values", "Fill missing values with mean")
-    )
-    if missing_values_handling == "Drop rows with missing values":
-        data_cleaned = data.dropna()
-    else:
-        data_cleaned = data.fillna(data.mean(numeric_only=True))
-    st.write("Cleaned Data Sample:")
-    st.dataframe(data_cleaned.head())
-```
-
-### 6.4 Exploratory Data Analysis (EDA)
-Melakukan analisis eksplorasi data untuk melihat distribusi dan hubungan antar variabel.
-
-```python
-elif selected == 'Exploratory Data Analysis (EDA)':
-    st.subheader("4. Exploratory Data Analysis (EDA)")
-    numerical_columns = data.select_dtypes(include=np.number).columns.tolist()
-    selected_column = st.selectbox("Select a numerical column:", numerical_columns)
-    if selected_column:
-        st.write(f"Distribution of {selected_column}:")
-        fig, ax = plt.subplots()
-        sns.histplot(data[selected_column], kde=True, ax=ax)
-        st.pyplot(fig)
-```
-
-### 6.5 Visualization & Explanatory Analysis
-Menampilkan visualisasi interaktif berdasarkan data yang difilter.
-
-```python
-   # Visualization & Explanatory Analysis
+    # Visualization & Explanatory Analysis
     elif selected == 'Visualization & Explanatory Analysis':
         st.subheader("5. Visualization & Explanatory Analysis")
 
@@ -228,4 +132,3 @@ Menampilkan visualisasi interaktif berdasarkan data yang difilter.
             fig, ax = plt.subplots(figsize=(10, 6))
             sns.heatmap(correlation_matrix, annot=True, cmap="coolwarm", ax=ax)
             st.pyplot(fig)
-""")
