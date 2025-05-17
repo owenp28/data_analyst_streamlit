@@ -13,7 +13,11 @@ def load_data():
     # Construct the full path to the CSV file
     file_path = os.path.join(script_dir, 'PRSA_Data_Wanliu_20130301-20170228.csv')
     # Use the full path when reading the file
-    return pd.read_csv(file_path)
+    try:
+        return pd.read_csv(file_path)
+    except FileNotFoundError:
+        st.error(f"File not found: {file_path}. Please ensure the file exists in the specified directory.")
+        return pd.DataFrame()  # Return an empty DataFrame if the file is not found
 
 # Call the function to load the data
 data = load_data()
@@ -113,14 +117,23 @@ if data is not None:
             else:
                 st.warning("Tidak ada kolom tanggal dalam dataset.")
                 filtered_data = data
-
+            if 'PM2.5' in data.columns:
+                monthly_pm25 = data.groupby('Month')['PM2.5'].mean()
+            else:
+                st.warning("Column 'PM2.5' is missing in the dataset.")
+                monthly_pm25 = pd.Series(dtype=float)
             # Visualisasi untuk Pertanyaan 1: How does PM2.5 concentration vary by month?
             st.subheader("How does PM2.5 concentration vary by month?")
             data['Month'] = data['Date'].dt.month
             monthly_pm25 = data.groupby('Month')['PM2.5'].mean()
             fig, ax = plt.subplots()
             monthly_pm25.plot(kind='bar', ax=ax)
-            ax.set_xlabel('Month')
+            available_pollutants = [col for col in pollutants if col in data.columns]
+            if len(available_pollutants) < 2:
+                st.warning("Not enough pollutant columns available for correlation analysis.")
+                correlation_matrix = pd.DataFrame()
+            else:
+                correlation_matrix = data[available_pollutants].corr()
             ax.set_ylabel('Average PM2.5 Concentration')
             ax.set_title('Average PM2.5 Concentration by Month')
             st.pyplot(fig)
