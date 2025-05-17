@@ -70,7 +70,11 @@ def load_data():
     # Construct the full path to the CSV file
     file_path = os.path.join(script_dir, 'PRSA_Data_Wanliu_20130301-20170228.csv')
     # Use the full path when reading the file
-    return pd.read_csv(file_path)
+    try:
+        return pd.read_csv(file_path)
+    except FileNotFoundError:
+        st.error(f"File not found: {file_path}. Please ensure the file exists in the specified directory.")
+        return pd.DataFrame()  # Return an empty DataFrame if the file is not found
 
 # Call the function to load the data
 data = load_data()
@@ -108,6 +112,7 @@ with st.sidebar:
 Menambahkan judul dan deskripsi aplikasi.
 
 ```python
+# Title and Description
 st.title("Data Analysis App")
 st.markdown("""
     ### Features:
@@ -139,52 +144,56 @@ if data is not None:
 Menampilkan statistik deskriptif dan nilai yang hilang dalam dataset.
 
 ```python
-elif selected == 'Assessing Data':
-    st.subheader("2. Assessing Data")
-    st.write("Summary Statistics:")
-    st.write(data.describe())
-    st.write("Missing Values:")
-    st.write(data.isnull().sum())
+    # Assessing Data
+    elif selected == 'Assessing Data':
+        st.subheader("2. Assessing Data")
+        st.write("Summary Statistics:")
+        st.write(data.describe())
+        st.write("Missing Values:")
+        st.write(data.isnull().sum())
 ```
 
 ### 6.3 Cleaning Data
 Membersihkan data dengan menghapus atau mengisi nilai yang hilang.
 
 ```python
-elif selected == 'Cleaning Data':
-    st.subheader("3. Cleaning Data")
-    missing_values_handling = st.radio(
-        "Choose how to handle missing values:",
-        ("Drop rows with missing values", "Fill missing values with mean")
-    )
-    if missing_values_handling == "Drop rows with missing values":
-        data_cleaned = data.dropna()
-    else:
-        data_cleaned = data.fillna(data.mean(numeric_only=True))
-    st.write("Cleaned Data Sample:")
-    st.dataframe(data_cleaned.head())
+    # Cleaning Data
+    elif selected == 'Cleaning Data':
+        st.subheader("3. Cleaning Data")
+        missing_values_handling = st.radio(
+            "Choose how to handle missing values:",
+            ("Drop rows with missing values", "Fill missing values with mean")
+        )
+        if missing_values_handling == "Drop rows with missing values":
+            data_cleaned = data.dropna()
+        else:
+            data_cleaned = data.fillna(data.mean(numeric_only=True))
+        st.write("Cleaned Data Sample:")
+        st.dataframe(data_cleaned.head())
+
 ```
 
 ### 6.4 Exploratory Data Analysis (EDA)
 Melakukan analisis eksplorasi data untuk melihat distribusi dan hubungan antar variabel.
 
 ```python
-elif selected == 'Exploratory Data Analysis (EDA)':
-    st.subheader("4. Exploratory Data Analysis (EDA)")
-    numerical_columns = data.select_dtypes(include=np.number).columns.tolist()
-    selected_column = st.selectbox("Select a numerical column:", numerical_columns)
-    if selected_column:
-        st.write(f"Distribution of {selected_column}:")
-        fig, ax = plt.subplots()
-        sns.histplot(data[selected_column], kde=True, ax=ax)
-        st.pyplot(fig)
+    # Exploratory Data Analysis (EDA)
+    elif selected == 'Exploratory Data Analysis (EDA)':
+        st.subheader("4. Exploratory Data Analysis (EDA)")
+        numerical_columns = data.select_dtypes(include=np.number).columns.tolist()
+        selected_column = st.selectbox("Select a numerical column:", numerical_columns)
+        if selected_column:
+            st.write(f"Distribution of {selected_column}:")
+            fig, ax = plt.subplots()
+            sns.histplot(data[selected_column], kde=True, ax=ax)
+            st.pyplot(fig)
 ```
 
 ### 6.5 Visualization & Explanatory Analysis
 Menampilkan visualisasi interaktif berdasarkan data yang difilter.
 
 ```python
-   # Visualization & Explanatory Analysis
+    # Visualization & Explanatory Analysis
     elif selected == 'Visualization & Explanatory Analysis':
         st.subheader("5. Visualization & Explanatory Analysis")
 
@@ -209,14 +218,23 @@ Menampilkan visualisasi interaktif berdasarkan data yang difilter.
             else:
                 st.warning("Tidak ada kolom tanggal dalam dataset.")
                 filtered_data = data
-
+            if 'PM2.5' in data.columns:
+                monthly_pm25 = data.groupby('Month')['PM2.5'].mean()
+            else:
+                st.warning("Column 'PM2.5' is missing in the dataset.")
+                monthly_pm25 = pd.Series(dtype=float)
             # Visualisasi untuk Pertanyaan 1: How does PM2.5 concentration vary by month?
             st.subheader("How does PM2.5 concentration vary by month?")
             data['Month'] = data['Date'].dt.month
             monthly_pm25 = data.groupby('Month')['PM2.5'].mean()
             fig, ax = plt.subplots()
             monthly_pm25.plot(kind='bar', ax=ax)
-            ax.set_xlabel('Month')
+            available_pollutants = [col for col in pollutants if col in data.columns]
+            if len(available_pollutants) < 2:
+                st.warning("Not enough pollutant columns available for correlation analysis.")
+                correlation_matrix = pd.DataFrame()
+            else:
+                correlation_matrix = data[available_pollutants].corr()
             ax.set_ylabel('Average PM2.5 Concentration')
             ax.set_title('Average PM2.5 Concentration by Month')
             st.pyplot(fig)
