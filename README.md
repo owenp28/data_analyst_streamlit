@@ -1,6 +1,3 @@
-import streamlit as st
-
-st.markdown("""
 # Data Analysis App
 
 This is a Streamlit application for data analysis, which includes features for gathering data, assessing data, cleaning data, exploratory data analysis (EDA), and visualization & explanatory analysis.
